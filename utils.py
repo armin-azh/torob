@@ -46,3 +46,9 @@ class JSONLinesWriter:
 
     def __exit__(self, type, value, traceback):
         self.close()
+
+
+def save_args(save_path, args):
+    with open(str(save_path), 'w') as f:
+        for key, item in vars(args).items():
+            f.write(f'{key}\t{item}\n')
