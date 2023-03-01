@@ -69,4 +69,7 @@ if __name__ == '__main__':
     # Hyperparameter
     parser.add_argument('--vocab-size', '--vocab_size', help='Vocab size', type=int, default=4096)
     parser.add_argument('--embedding', help='Embedding size', type=int, default=256)
+
+    # K-fold
+    parser.add_argument('--k-fold', '--k_fold', help='Enable k-fold', action='store_true', default=True)
     main(args=parser.parse_args())
