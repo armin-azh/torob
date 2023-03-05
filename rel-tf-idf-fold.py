@@ -23,24 +23,33 @@ def main(args: Namespace) -> None:
     products_df = pd.DataFrame(read_json_lines(product_info_path))
     products_id_to_idx = dict((p_id, idx) for idx, p_id in enumerate(products_df['id']))
 
-    random_projection_mat = np.random.rand(args.vocab_size, args.embedding)
-    np.save(str(args.root.joinpath('random-proj-mat.npy')), random_projection_mat)
+    if args.root.joinpath('random-proj-mat.npy').is_file():
+        print('Random Project Mat is loaded')
+        random_projection_mat = np.load(str(args.root.joinpath('random-proj-mat.npy')))
+    else:
+        random_projection_mat = np.random.rand(args.vocab_size, args.embedding)
+        np.save(str(args.root.joinpath('random-proj-mat.npy')), random_projection_mat)
+
+    # if args.root.joinpath('product-feature.npy').is_file():
+    #     print('Product features mat is loaded')
+    #     products_projected = np.load(str(args.root.joinpath('product-feature.npy')))
+    # else:
     vectors = TfidfVectorizer(max_features=args.vocab_size, lowercase=True, use_idf=True)
     products_tfidf = vectors.fit_transform(products_df['title_normalized'])
     products_projected = products_tfidf.dot(random_projection_mat)
-    np.save(str(args.root.joinpath('product-feature.npy ')), products_projected)
-
+    np.save(str(args.root.joinpath('product-feature.npy')), products_projected)
     del products_tfidf
     gc.collect()
 
-    test_offline_queries_df = pd.DataFrame(read_json_lines(test_query_path))
-    queries_test_tfidf = vectors.transform(test_offline_queries_df['raw_query_normalized'])
-    queries_test_projected = queries_test_tfidf.dot(random_projection_mat)
-    np.save(str(args.root.joinpath('test-feature.npy')),queries_test_projected)
-    del queries_test_tfidf  # Free up memory.
-    gc.collect()
+    if not args.root.joinpath('test-feature.npy').is_file():
+        test_offline_queries_df = pd.DataFrame(read_json_lines(test_query_path))
+        queries_test_tfidf = vectors.transform(test_offline_queries_df['raw_query_normalized'])
+        queries_test_projected = queries_test_tfidf.dot(random_projection_mat)
+        np.save(str(args.root.joinpath('test-feature.npy')), queries_test_projected)
+        del queries_test_tfidf  # Free up memory.
+        gc.collect()
 
-    fold_paths = list(root.glob('*'))
+    fold_paths = list(root.glob('*')) if not args.fold_idx else [args.fold_idx]
     for fold_path in tqdm(fold_paths, total=len(fold_paths)):
         search_data_path = fold_path.joinpath('aggregate_search_train.jsonl')
         searches_df = pd.DataFrame(read_json_lines(search_data_path))
@@ -54,7 +63,8 @@ def main(args: Namespace) -> None:
         with open(str(fold_path.joinpath('train.dat')), 'w') as file:
             for qid, search in enumerate(searches_df.itertuples(index=False)):
                 clicks = dict(zip(search.clicks, search.clicks_count))
-                for can_product_id in search.results:
+                print("MalcomX")
+                for can_product_id in search.results[:200]:
                     if can_product_id is None:
                         continue
                     cand_score = clicks.get(can_product_id, 0)
@@ -114,6 +124,7 @@ def main(args: Namespace) -> None:
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--root', help='Contest data root', type=Path, default='experimental/exp1')
+    parser.add_argument('--fold-idx','--fold_idx',help='fold path',type=Path,default='/home/samtech/MalcomX/torob/experimental/exp1/searches-fold/fold-1')
 
     # Hyperparameter
     parser.add_argument('--vocab-size', '--vocab_size', help='Vocab size', type=int, default=4096)
