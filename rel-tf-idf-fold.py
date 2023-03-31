@@ -61,10 +61,9 @@ def main(args: Namespace) -> None:
 
         # Create .dat file
         with open(str(fold_path.joinpath('train.dat')), 'w') as file:
-            for qid, search in enumerate(searches_df.itertuples(index=False)):
+            for qid, search in tqdm(enumerate(searches_df.itertuples(index=False))):
                 clicks = dict(zip(search.clicks, search.clicks_count))
-                print("MalcomX")
-                for can_product_id in search.results[:200]:
+                for can_product_id in search.results[:20]:
                     if can_product_id is None:
                         continue
                     cand_score = clicks.get(can_product_id, 0)
@@ -124,7 +123,7 @@ def main(args: Namespace) -> None:
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--root', help='Contest data root', type=Path, default='experimental/exp1')
-    parser.add_argument('--fold-idx','--fold_idx',help='fold path',type=Path,default='/home/samtech/MalcomX/torob/experimental/exp1/searches-fold/fold-1')
+    parser.add_argument('--fold-idx','--fold_idx',help='fold path',type=Path,default='/home/jericho/Project/LTR/experimental/exp1/searches-fold/fold-1')
 
     # Hyperparameter
     parser.add_argument('--vocab-size', '--vocab_size', help='Vocab size', type=int, default=4096)
